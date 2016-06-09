@@ -13,6 +13,9 @@ public class Node : MonoBehaviour {
 			return external;
 		}
 		set {
+			if (value == false) {
+				gameObject.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+			}
 			external = value;
 		}
 	}
@@ -63,36 +66,38 @@ public class Node : MonoBehaviour {
         transform.position = position;
     }
 
-    public void AddNeighbor(Edge edge) {
-		neighbors = SortNeighbors(edge, neighbors);
+	public void AddEdge(Edge edge) {
+		neighbors.Add(edge);
+	}
+
+    public void CreateConnectionWithNeighbor(Edge edge) {
+		AddEdge(edge);
+		GameObject opposite = edge.GetOpposite(gameObject);
+		opposite.GetComponent<Node>().AddEdge(edge);
+		CreateConnector(edge.GetOpposite(gameObject));
+		if (!edge.Contains(gameObject)) {
+			Debug.Log("ohnoes" + edge.End() + " " + edge.Start());
+		}
         RecalculateLocationValue();
     }
 
-	public void AddNeighbor(List<Edge> edges) {
-		foreach (Edge edge in edges) {
-			CreateConnector(edge.GetOpposite(gameObject));
-			edge.GetOpposite(gameObject).GetComponent<Node>().AddNeighbor(edge);
-			AddNeighbor(edge);
-		}
-	}
-
-	public List<Edge> SortNeighbors(Edge edge, List<Edge> edges) {
-		List<Edge> sorted = new List<Edge>();
-		sorted.AddRange(edges);
-		float angle = PointManager.RotationOfLine(edge.GetOpposite(gameObject).transform.position, gameObject.transform.position);
-		if (sorted.Count == 0) {
-			sorted.Add(edge);
-		} else {
-			for (int i = 0; i < edges.Count; ++i) {
-				float tempAngle = PointManager.RotationOfLine(edges[i].GetOpposite(gameObject).transform.position, gameObject.transform.position);
-				if (angle > tempAngle) {
-					sorted.Insert(i, edge);
-					break;
-				}
-			}
-		}
-		return sorted;
-	}
+	//public List<Edge> SortNeighbors(Edge edge, List<Edge> edges) {
+	//	List<Edge> sorted = new List<Edge>();
+	//	sorted.AddRange(edges);
+	//	float angle = PointManager.RotationOfLine(edge.GetOpposite(gameObject).transform.position, gameObject.transform.position);
+	//	if (sorted.Count == 0) {
+	//		sorted.Add(edge);
+	//	} else {
+	//		for (int i = 0; i < edges.Count; ++i) {
+	//			float tempAngle = PointManager.RotationOfLine(edges[i].GetOpposite(gameObject).transform.position, gameObject.transform.position);
+	//			if (angle > tempAngle) {
+	//				sorted.Insert(i, edge);
+	//				break;
+	//			}
+	//		}
+	//	}
+	//	return sorted;
+	//}
 
 	private void CreateConnector(GameObject other) {
 		LineRenderer lr = GameObject.Instantiate(connector).GetComponent<LineRenderer>();

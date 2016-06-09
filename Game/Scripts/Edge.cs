@@ -31,4 +31,11 @@ public class Edge {
 	public GameObject End() {
 		return end;
 	}
+
+	public bool Contains(GameObject g) {
+		if (end.Equals(g) || start.Equals(g)) {
+			return true;
+		}
+		return false;
+	}
 }

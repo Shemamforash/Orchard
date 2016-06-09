@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 public class Graph : MonoBehaviour{
-    private List<GameObject> nodes = new List<GameObject>();
+    private static List<GameObject> nodes = new List<GameObject>();
 	private List<Edge> edges = new List<Edge>();
     public GameObject startingTree;
     public GameObject treePrefab;
@@ -11,31 +11,45 @@ public class Graph : MonoBehaviour{
         nodes.Add(startingTree);
     }
 
-    public bool Add(Vector2 position, List<GameObject> nearbyTrees) {
-        if (nearbyTrees.Count > 0) {
-            GameObject newNode = GameObject.Instantiate(treePrefab);
-            newNode.GetComponent<Node>().SetPosition(position);
+	public static List<GameObject> Nodes(){
+		return nodes;
+	}
 
-			List<Edge> newNeighbors = new List<Edge>();
-            foreach(GameObject g in nearbyTrees){
-				Edge e = new Edge(newNode, g);
-				newNeighbors = newNode.GetComponent<Node>().SortNeighbors(e, newNeighbors);
+    public bool Add(Vector2 position, List<GameObject> nearbyTrees) {
+        if (nearbyTrees.Count > 0) {												//If there are nearby trees
+            GameObject newNode = GameObject.Instantiate(treePrefab);				//Make a new node
+			newNode.name = "Node " + nodes.Count;
+            newNode.GetComponent<Node>().SetPosition(position);						//Set its position to where we want it
+
+			List<Edge> newNeighbors = new List<Edge>();								//Make a list of the potential edges it can be a part of
+            foreach(GameObject g in nearbyTrees){									//For each nearby tree
+				Edge e = new Edge(newNode, g);										//Make a temporary edge
+				newNeighbors.Add(e);
             }
 
-			if (PointManager.IsNodeInternal(newNode.transform.position, nodes)) {
+			if (!PointManager.IsNodeExternal(newNode.transform.position)) {
 				GameObject.Destroy(newNode);
 				return false;
 			}
-			newNode.GetComponent<Node>().AddNeighbor(newNeighbors);
 
+			foreach (Edge e in newNeighbors) {
+				newNode.GetComponent<Node>().CreateConnectionWithNeighbor(e);
+				GameObject wtf = GameObject.Instantiate(treePrefab);
+				wtf.name = e.Start() + " " + e.End();
+				wtf.transform.parent = newNode.transform;
+			}
 			edges.AddRange(newNeighbors);
             nodes.Add(newNode);
-			newNode.name = "Node " + nodes.Count;
-
-			PointManager.RecalculateExternalPoints(nodes);
         }
+		UpdateExternalNodes();
 		return true;
     }
+
+	private void UpdateExternalNodes() {
+		foreach (GameObject g in nodes) {
+			g.GetComponent<Node>().External = PointManager.IsNodeExternal(g.transform.position);
+		}
+	}
 
     public List<GameObject> NearestTrees(Vector3 position) {
         List<GameObject> nearestTrees = new List<GameObject>();
