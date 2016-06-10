@@ -4,33 +4,14 @@ using System.Collections.Generic;
 public class Node : MonoBehaviour {
 	//private Neighbors neighbors = new Neighbors();
     public int locationValue = 0, levelOffset = -1;
-	public GameObject connector;
-	private bool external = true;
-	private List<Edge> neighbors = new List<Edge>();
+	public GameObject connector, seedPrefab;
+	private GameObject seed = null;
+	private List<GameObject> neighbors = new List<GameObject>();
+	public float time = 0;
+	private TreeType type;
 
-	public bool External {
-		get {
-			return external;
-		}
-		set {
-			if (value == false) {
-				gameObject.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
-			}
-			external = value;
-		}
-	}
-
-	public Edge ShareEdge(GameObject other) {
-		foreach (Edge e in neighbors) {
-			if (e.GetOpposite(gameObject).Equals(other)) {
-				return e;
-			}
-		}
-		return null;
-	}
-
-	public List<Edge> Neighbors() {
-		return neighbors;
+	public void Start() {
+		UpdateType();
 	}
 
     private enum TreeType {
@@ -42,12 +23,28 @@ public class Node : MonoBehaviour {
         EBONY = 5
     }
 
-    private TreeType type;
-
     private void TemporaryBackgroundUpdate() {
         Color[] colors = new Color[] {Color.green, Color.red, Color.grey, Color.yellow, Color.cyan, Color.black };
         gameObject.transform.FindChild("Background").GetComponent<SpriteRenderer>().color = colors[(int)type];
     }
+
+	public void Update() {
+		if (type == TreeType.EBONY) {
+			if (seed == null) {
+				time += Time.deltaTime;
+			}
+			if (time >= 1) {
+				MakeSeed();
+				time = 0;
+			}
+		}
+	}
+
+	private void MakeSeed() {
+		seed = GameObject.Instantiate(seedPrefab);
+		Vector3 seedPosition = new Vector3(transform.position.x - transform.localScale.x / 10, transform.position.y + 0.75f);
+		seed.transform.position = seedPosition;
+	}
 
     private void UpdateType() {
         int sum = locationValue + levelOffset;
@@ -55,56 +52,52 @@ public class Node : MonoBehaviour {
             sum = 5;
         }
         else if (sum < 0) {
-            sum = 0;
+			Remove();
         }
         type = (TreeType)(sum);
         TemporaryBackgroundUpdate();
     }
+
+	private void Remove() {
+		foreach (GameObject n in neighbors) {
+			n.GetComponent<Node>().RemoveNeighbor(gameObject);
+		}
+		GameObject.Destroy(gameObject);
+	}
 
     public void SetPosition(Vector2 position) {
         type = TreeType.SAPLING;
         transform.position = position;
     }
 
-	public void AddEdge(Edge edge) {
-		neighbors.Add(edge);
+	public void AddNeighbor(GameObject node) {
+		neighbors.Add(node);
+		++locationValue;
+		UpdateType();
 	}
 
-    public void CreateConnectionWithNeighbor(Edge edge) {
-		AddEdge(edge);
-		GameObject opposite = edge.GetOpposite(gameObject);
-		opposite.GetComponent<Node>().AddEdge(edge);
-		CreateConnector(edge.GetOpposite(gameObject));
-		if (!edge.Contains(gameObject)) {
-			Debug.Log("ohnoes" + edge.End() + " " + edge.Start());
+	public void RemoveNeighbor(GameObject node) {
+		if (neighbors.Remove(node) != null) {
+			--locationValue;
+			UpdateType();
 		}
-        RecalculateLocationValue();
+	}
+
+    public void CreateConnectionWithNeighbors(List<GameObject> nodes) {
+		foreach (GameObject g in nodes) {
+			AddNeighbor(g);
+			g.GetComponent<Node>().AddNeighbor(gameObject);
+			CreateConnector(g);
+		}
     }
 
-	//public List<Edge> SortNeighbors(Edge edge, List<Edge> edges) {
-	//	List<Edge> sorted = new List<Edge>();
-	//	sorted.AddRange(edges);
-	//	float angle = PointManager.RotationOfLine(edge.GetOpposite(gameObject).transform.position, gameObject.transform.position);
-	//	if (sorted.Count == 0) {
-	//		sorted.Add(edge);
-	//	} else {
-	//		for (int i = 0; i < edges.Count; ++i) {
-	//			float tempAngle = PointManager.RotationOfLine(edges[i].GetOpposite(gameObject).transform.position, gameObject.transform.position);
-	//			if (angle > tempAngle) {
-	//				sorted.Insert(i, edge);
-	//				break;
-	//			}
-	//		}
-	//	}
-	//	return sorted;
-	//}
-
 	private void CreateConnector(GameObject other) {
-		LineRenderer lr = GameObject.Instantiate(connector).GetComponent<LineRenderer>();
+		GameObject newConnector = GameObject.Instantiate(connector);
+		newConnector.GetComponent<ConnectorBehaviour>().SetEnds(gameObject, other);
+		LineRenderer lr = newConnector.GetComponent<LineRenderer>();
 		lr.SetVertexCount(2);
 		lr.SetPosition(0, other.transform.position);
 		lr.SetPosition(1, transform.position);
-
 	}
 
 	public int NumberOfNeighbors() {
@@ -116,9 +109,7 @@ public class Node : MonoBehaviour {
         UpdateType();
     }
 
-    public void RecalculateLocationValue() {        //Where the magic happens TODO
-        int n = neighbors.Count;
-        locationValue = n;
-        UpdateType();
-    }
+	public List<GameObject> Neighbors() {
+		return neighbors;
+	}
 }

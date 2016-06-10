@@ -10,7 +10,7 @@ public class LineManager : MonoBehaviour {
     }
 
     void Update() {
-        if (nearbyMouse == null) {
+        if (nearbyMouse == null || GameManager.SeedCount() == 0) {
             lineRenderer.SetVertexCount(0);
         } else {
             lineRenderer.SetVertexCount(2);
@@ -19,7 +19,7 @@ public class LineManager : MonoBehaviour {
         }
     }
 
-    public void SetMouseNearby(GameObject nearbyMouse) {
-        this.nearbyMouse = nearbyMouse;
-    }
+	public void SetMouseNearby(GameObject nearbyMouse) {
+		this.nearbyMouse = nearbyMouse;
+	}
 }
