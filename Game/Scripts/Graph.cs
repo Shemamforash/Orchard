@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 public class Graph : MonoBehaviour{
-    private List<GameObject> nodes = new List<GameObject>();
+    private static List<GameObject> nodes = new List<GameObject>();
     public GameObject startingTree;
     public GameObject treePrefab;
 
@@ -14,13 +14,21 @@ public class Graph : MonoBehaviour{
 		return nodes;
 	}
 
+	public static void RemoveNode(Node n) {
+		nodes.Remove(n.gameObject);
+		foreach (GameObject neighbor in n.Neighbors()) {
+			neighbor.GetComponent<Node>().RemoveNeighbor(n.gameObject);
+		}
+		GameObject.Destroy(n.gameObject);
+	}
+
     public bool Add(Vector2 position, List<GameObject> nearbyTrees) {
         if (nearbyTrees.Count > 0) {												//If there are nearby trees
             GameObject newNode = GameObject.Instantiate(treePrefab);				//Make a new node
 			newNode.name = "Node " + nodes.Count;
+			nodes.Add(newNode);
             newNode.GetComponent<Node>().SetPosition(position);						//Set its position to where we want it
 			newNode.GetComponent<Node>().CreateConnectionWithNeighbors(nearbyTrees);
-            nodes.Add(newNode);
         }
 		return true;
     }

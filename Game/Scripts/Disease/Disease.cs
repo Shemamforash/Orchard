@@ -8,13 +8,17 @@ public class Disease : MonoBehaviour {
 	private int value;
 	public GameObject diseasePrefab;
 	private bool lerping = true;
-	private static List<GameObject> allTargets = new List<GameObject>();
 
 	private void SetTarget(GameObject target, int value) {
 		this.target = target;
 		this.value = value;
 		origin = transform.position;
 		start = Time.time;
+		DiseaseManager.Add(this);
+	}
+
+	public GameObject Target() {
+		return target;
 	}
 
 	public void Update () {
@@ -22,8 +26,8 @@ public class Disease : MonoBehaviour {
 			target.GetComponent<Node>().ChangeLevelOffset(-1);
 			if (value > 0) {
 				SpawnChildren();
-				GameObject.Destroy(gameObject);
 			}
+			DiseaseManager.Remove(this);
 		} else {
 			float timePassed = (Time.time - start);
 			float fracJourney = timePassed / duration;
@@ -39,9 +43,8 @@ public class Disease : MonoBehaviour {
 	private void SpawnChildren() {
 		List<GameObject> neighbors = new List<GameObject>();
 		foreach (GameObject t in target.GetComponent<Node>().Neighbors()) {
-			if (!allTargets.Contains(t)) {
+			if (DiseaseManager.Targetable(t.GetComponent<Node>())) {
 				neighbors.Add(t);
-				Disease.allTargets.Add(t);
 			}
 		}
 		if (neighbors.Count > 0) {
@@ -73,19 +76,23 @@ public class Disease : MonoBehaviour {
 		int shortestDistance = 10000;
 		GameObject target = null;
 		foreach (GameObject node in Camera.main.GetComponent<Graph>().Nodes()) {
-			Vector2 screenPosition = Camera.main.WorldToScreenPoint(node.transform.position);
-			int minY = (int)Mathf.Min(height - screenPosition.y, screenPosition.y);
-			int minX = (int)Mathf.Min(width - screenPosition.x, screenPosition.x);
-			int absoluteMin = (int)Mathf.Min(minY, minX);
-			if (absoluteMin < shortestDistance) {
-				shortestDistance = absoluteMin;
-				target = node;
+			if (DiseaseManager.Targetable(node.GetComponent<Node>())) {
+				Vector2 screenPosition = Camera.main.WorldToScreenPoint(node.transform.position);
+				int minY = (int)Mathf.Min(height - screenPosition.y, screenPosition.y);
+				int minX = (int)Mathf.Min(width - screenPosition.x, screenPosition.x);
+				int absoluteMin = (int)Mathf.Min(minY, minX);
+				if (absoluteMin < shortestDistance) {
+					shortestDistance = absoluteMin;
+					target = node;
+				}
 			}
 		}
 		if (target != null) {
 			float squaredOffset = Mathf.Pow(Random.value, 2);
 			int initialValue = (int)(squaredOffset * (float)Random.Range(5, 40));
 			SetTarget(target, initialValue);
+		} else {
+			DiseaseManager.Remove(this);
 		}
 	}
 }

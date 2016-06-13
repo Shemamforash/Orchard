@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public class Node : MonoBehaviour {
 	//private Neighbors neighbors = new Neighbors();
-    public int locationValue = 0, levelOffset = -1;
+    public int locationValue = 0, levelOffset = -1, nodeValue = 0;
 	public GameObject connector, seedPrefab;
 	private GameObject seed = null;
 	private List<GameObject> neighbors = new List<GameObject>();
@@ -38,6 +38,7 @@ public class Node : MonoBehaviour {
 				time = 0;
 			}
 		}
+		UpdateType();
 	}
 
 	private void MakeSeed() {
@@ -46,24 +47,23 @@ public class Node : MonoBehaviour {
 		seed.transform.position = seedPosition;
 	}
 
+	public int GetNodeValue() {
+		return nodeValue;
+	}
+
     private void UpdateType() {
         int sum = locationValue + levelOffset;
         if (sum > 5) {
             sum = 5;
         }
-        else if (sum < 0) {
-			Remove();
-        }
-        type = (TreeType)(sum);
-        TemporaryBackgroundUpdate();
-    }
-
-	private void Remove() {
-		foreach (GameObject n in neighbors) {
-			n.GetComponent<Node>().RemoveNeighbor(gameObject);
+        if (sum < 0) {
+			Graph.RemoveNode(this);
+		} else {
+			nodeValue = sum;
+			type = (TreeType)(sum);
+			TemporaryBackgroundUpdate();
 		}
-		GameObject.Destroy(gameObject);
-	}
+    }
 
     public void SetPosition(Vector2 position) {
         type = TreeType.SAPLING;
