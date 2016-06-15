@@ -16,8 +16,8 @@ public class GameManager : MonoBehaviour{
 		if (diseaseCounter == -1) {
 			diseaseCounter = 0;
 			diseaseTarget = Random.Range(15, 25);
-		} else if (diseaseCounter > diseaseTarget || Input.GetButton("Jump")) {
-			DiseaseManager.CreateDisease(diseasePrefab);
+		} else if ((diseaseCounter > diseaseTarget || Input.GetButton("Jump")) && !DiseaseFactory.DiseaseActive()) {
+			DiseaseFactory.CreateDisease(diseasePrefab);
 			diseaseCounter = -1;
 		} else {
 			diseaseCounter += Time.deltaTime;

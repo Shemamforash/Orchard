@@ -16,8 +16,20 @@ public class Graph : MonoBehaviour{
 
 	public static void RemoveNode(Node n) {
 		nodes.Remove(n.gameObject);
-		foreach (GameObject neighbor in n.Neighbors()) {
-			neighbor.GetComponent<Node>().RemoveNeighbor(n.gameObject);
+		//foreach (GameObject neighbor in n.Neighbors()) {
+		//	Debug.Log(neighbor + " " + n);
+		//	neighbor.GetComponent<Node>().RemoveNeighbor(n.gameObject);
+		//}
+		foreach (GameObject node in nodes) {
+			List<GameObject> nodesToRemove = new List<GameObject>();
+			foreach (GameObject nodeNeighbor in node.GetComponent<Node>().Neighbors()) {
+				if (nodeNeighbor.Equals(n)) {
+					nodesToRemove.Add(nodeNeighbor);
+				}
+			}
+			foreach (GameObject g in nodesToRemove) {
+				node.GetComponent<Node>().RemoveNeighbor(g);
+			}
 		}
 		GameObject.Destroy(n.gameObject);
 	}

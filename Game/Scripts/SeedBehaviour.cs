@@ -16,7 +16,7 @@ public class SeedBehaviour : MonoBehaviour {
 		if (Input.GetMouseButtonDown(0)) {
 			Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 			RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
-			if (hit != null && hit.collider != null && hit.collider.gameObject.Equals(gameObject)) {
+			if (hit.collider != null && hit.collider.gameObject.Equals(gameObject)) {
 				GameManager.AddSeed();
 				GameObject.Destroy(gameObject);
 			}

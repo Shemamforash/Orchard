@@ -4,6 +4,7 @@ using System.Collections.Generic;
 public class Node : MonoBehaviour {
 	//private Neighbors neighbors = new Neighbors();
     public int locationValue = 0, levelOffset = -1, nodeValue = 0;
+	public bool isHometree = false;
 	public GameObject connector, seedPrefab;
 	private GameObject seed = null;
 	private List<GameObject> neighbors = new List<GameObject>();
@@ -52,16 +53,18 @@ public class Node : MonoBehaviour {
 	}
 
     private void UpdateType() {
-        int sum = locationValue + levelOffset;
-        if (sum > 5) {
-            sum = 5;
-        }
-        if (sum < 0) {
-			Graph.RemoveNode(this);
-		} else {
-			nodeValue = sum;
-			type = (TreeType)(sum);
-			TemporaryBackgroundUpdate();
+		if (!isHometree) {
+			int sum = locationValue + levelOffset;
+			if (sum > 5) {
+				sum = 5;
+			}
+			if (sum < 0) {
+				Graph.RemoveNode(this);
+			} else {
+				nodeValue = sum;
+				type = (TreeType)(sum);
+				TemporaryBackgroundUpdate();
+			}
 		}
     }
 
@@ -77,7 +80,7 @@ public class Node : MonoBehaviour {
 	}
 
 	public void RemoveNeighbor(GameObject node) {
-		if (neighbors.Remove(node) != null) {
+		if (neighbors.Remove(node)) {
 			--locationValue;
 			UpdateType();
 		}

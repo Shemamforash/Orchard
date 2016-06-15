@@ -8,13 +8,16 @@ public class Disease : MonoBehaviour {
 	private int value;
 	public GameObject diseasePrefab;
 	private bool lerping = true;
+	private DiseaseManager manager;
 
-	private void SetTarget(GameObject target, int value) {
+	public void SetTarget(DiseaseManager manager, GameObject target, int value) {
+		this.manager = manager;
+		manager.AddVisited(target);
 		this.target = target;
 		this.value = value;
+		Debug.Log(value);
 		origin = transform.position;
 		start = Time.time;
-		DiseaseManager.Add(this);
 	}
 
 	public GameObject Target() {
@@ -22,13 +25,13 @@ public class Disease : MonoBehaviour {
 	}
 
 	public void Update () {
-		if (!lerping) {
-			target.GetComponent<Node>().ChangeLevelOffset(-1);
+		if (!lerping && target != null) {
 			if (value > 0) {
 				SpawnChildren();
+			} else {
+				Debug.Log("Disease has target and has stopped moving but has no value.");
 			}
-			DiseaseManager.Remove(this);
-		} else {
+		} else if (target != null) {
 			float timePassed = (Time.time - start);
 			float fracJourney = timePassed / duration;
 			if (fracJourney + 0.01f >= 1f) {
@@ -37,16 +40,20 @@ public class Disease : MonoBehaviour {
 			} else {
 				transform.position = Vector3.Lerp(origin, target.transform.position, fracJourney);
 			}
+		} else {
+			Debug.Log("Target is null.");
 		}
 	}
 
 	private void SpawnChildren() {
 		List<GameObject> neighbors = new List<GameObject>();
+		target.GetComponent<Node>().ChangeLevelOffset(-1);
 		foreach (GameObject t in target.GetComponent<Node>().Neighbors()) {
-			if (DiseaseManager.Targetable(t.GetComponent<Node>())) {
+			if (DiseaseFactory.Targetable(t) && !manager.NodeVisited(t)) {
 				neighbors.Add(t);
 			}
 		}
+		List<GameObject> newDiseases = new List<GameObject>();
 		if (neighbors.Count > 0) {
 			int numberToInfect = Random.Range(1, neighbors.Count);
 			if (numberToInfect > value) {
@@ -59,40 +66,16 @@ public class Disease : MonoBehaviour {
 					GameObject infectee = neighbors[val];
 					neighbors.Remove(infectee);
 					GameObject newDisease = GameObject.Instantiate(diseasePrefab);
-					if (value - newValue < 0) {
+					if (value - newValue <= 0) {
 						newValue = value;
 					}
-					newDisease.GetComponent<Disease>().SetTarget(infectee, newValue);
+					newDisease.GetComponent<Disease>().SetTarget(manager, infectee, newValue);
+					newDiseases.Add(newDisease);
 					value -= newValue;
 					--numberToInfect;
 				}
 			}
 		}
-	}
-
-	public void FindTarget() {
-		int width = Screen.width;
-		int height = Screen.height;
-		int shortestDistance = 10000;
-		GameObject target = null;
-		foreach (GameObject node in Camera.main.GetComponent<Graph>().Nodes()) {
-			if (DiseaseManager.Targetable(node.GetComponent<Node>())) {
-				Vector2 screenPosition = Camera.main.WorldToScreenPoint(node.transform.position);
-				int minY = (int)Mathf.Min(height - screenPosition.y, screenPosition.y);
-				int minX = (int)Mathf.Min(width - screenPosition.x, screenPosition.x);
-				int absoluteMin = (int)Mathf.Min(minY, minX);
-				if (absoluteMin < shortestDistance) {
-					shortestDistance = absoluteMin;
-					target = node;
-				}
-			}
-		}
-		if (target != null) {
-			float squaredOffset = Mathf.Pow(Random.value, 2);
-			int initialValue = (int)(squaredOffset * (float)Random.Range(5, 40));
-			SetTarget(target, initialValue);
-		} else {
-			DiseaseManager.Remove(this);
-		}
+		manager.AddChildDiseases(gameObject, newDiseases);
 	}
 }
