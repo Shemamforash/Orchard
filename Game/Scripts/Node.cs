@@ -10,6 +10,7 @@ public class Node : MonoBehaviour {
 	private List<GameObject> neighbors = new List<GameObject>();
 	public float time = 0;
 	private TreeType type;
+	private Graph graph;
 
 	public void Start() {
 		UpdateType();
@@ -53,13 +54,13 @@ public class Node : MonoBehaviour {
 	}
 
     private void UpdateType() {
-		if (!isHometree) {
+		if ((isHometree && neighbors.Count == 0) || !isHometree) {
 			int sum = locationValue + levelOffset;
 			if (sum > 5) {
 				sum = 5;
 			}
 			if (sum < 0) {
-				Graph.RemoveNode(this);
+				graph.Remove(gameObject);
 			} else {
 				nodeValue = sum;
 				type = (TreeType)(sum);
@@ -68,7 +69,8 @@ public class Node : MonoBehaviour {
 		}
     }
 
-    public void SetPosition(Vector2 position) {
+    public void SetPosition(Graph graph, Vector2 position) {
+		this.graph = graph;
         type = TreeType.SAPLING;
         transform.position = position;
     }

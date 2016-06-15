@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 public class Graph : MonoBehaviour{
-    private static List<GameObject> nodes = new List<GameObject>();
+    private List<GameObject> nodes = new List<GameObject>();
     public GameObject startingTree;
     public GameObject treePrefab;
 
@@ -14,15 +14,13 @@ public class Graph : MonoBehaviour{
 		return nodes;
 	}
 
-	public static void RemoveNode(Node n) {
+	public void Remove(GameObject n) {
 		nodes.Remove(n.gameObject);
-		//foreach (GameObject neighbor in n.Neighbors()) {
-		//	Debug.Log(neighbor + " " + n);
-		//	neighbor.GetComponent<Node>().RemoveNeighbor(n.gameObject);
-		//}
+		List<GameObject> nodesToRemove = new List<GameObject>();
 		foreach (GameObject node in nodes) {
-			List<GameObject> nodesToRemove = new List<GameObject>();
-			foreach (GameObject nodeNeighbor in node.GetComponent<Node>().Neighbors()) {
+			List<GameObject> neighbors = new List<GameObject>();
+			neighbors.AddRange(node.GetComponent<Node>().Neighbors());
+			foreach (GameObject nodeNeighbor in neighbors) {
 				if (nodeNeighbor.Equals(n)) {
 					nodesToRemove.Add(nodeNeighbor);
 				}
@@ -30,8 +28,20 @@ public class Graph : MonoBehaviour{
 			foreach (GameObject g in nodesToRemove) {
 				node.GetComponent<Node>().RemoveNeighbor(g);
 			}
+			nodesToRemove.Clear();
 		}
 		GameObject.Destroy(n.gameObject);
+		CheckBadConnections();
+	}
+
+	public void CheckBadConnections() {
+		List<GameObject> nodesToRemove = new List<GameObject>();
+		foreach (GameObject node in nodes) {
+			if (!ConnectedToHometree(node)) {
+				nodesToRemove.Add(node);
+			}
+		}
+		nodesToRemove.ForEach(p => Remove(p));
 	}
 
     public bool Add(Vector2 position, List<GameObject> nearbyTrees) {
@@ -39,7 +49,7 @@ public class Graph : MonoBehaviour{
             GameObject newNode = GameObject.Instantiate(treePrefab);				//Make a new node
 			newNode.name = "Node " + nodes.Count;
 			nodes.Add(newNode);
-            newNode.GetComponent<Node>().SetPosition(position);						//Set its position to where we want it
+            newNode.GetComponent<Node>().SetPosition(this, position);						//Set its position to where we want it
 			newNode.GetComponent<Node>().CreateConnectionWithNeighbors(nearbyTrees);
         }
 		return true;
@@ -58,4 +68,24 @@ public class Graph : MonoBehaviour{
         }
         return nearestTrees;
     }
+
+	private bool ConnectedToHometree(GameObject node) {
+		Queue<GameObject> q = new Queue<GameObject>();
+		List<GameObject> visited = new List<GameObject>();
+		visited.Add(node);
+		q.Enqueue(node);
+		while (q.Count > 0) {
+			GameObject c = q.Dequeue();
+			foreach (GameObject g in c.GetComponent<Node>().Neighbors()) {
+				if (g.Equals(startingTree)) {
+					return true;
+				}
+				if (!visited.Contains(g)) {
+					visited.Add(g);
+					q.Enqueue(g);
+				}
+			}
+		}
+		return false;
+	}
 }
